@@ -1,37 +1,77 @@
-## Welcome to GitHub Pages
+# KoPixel
+[![](https://jitpack.io/v/ryanhcode/KoPixel.svg)](https://jitpack.io/#ryanhcode/KoPixel)
 
-You can use the [editor on GitHub](https://github.com/ryanhcode/KoPixel/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+KoPixel is a simple &amp; flexible asynchronous Hypixel API for Kotlin
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## Installation
 
-### Markdown
+Add the following to your build.gradle(.kts)
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+```groovy
+dependencies {
+    implementation 'com.github.ryanhcode:KoPixel:$kopixel_version'
+}
+```
+Or visit Jitpack and [select a version](https://jitpack.io/#ryanhcode/KoPixel/latest) 
 
-```markdown
-Syntax highlighted code block
+## Usage
 
-# Header 1
-## Header 2
-### Header 3
+In order to obtain a `KoPixelAPI` instance, use NewKoPixelAPI
+If you plan on just using the library synchronously, you can use NewKoPixelAPI wherever you like.
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```kotlin
+val hypixelAPIKey = "..."
+val api = NewKoPixelAPI(hypixelAPIKey)
+...
+```
+However, if you are planning to use KoPixel asynchronously, the API must be created inside of a CoroutineScope, or inside of a block such as `runBlocking` which is recommended.
+```kotlin
+fun main() = runBlocking {
+    val hypixelAPIKey = "..."
+    val api = NewKoPixelAPI(hypixelAPIKey)
+    ...
+}
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+KoPixel has both asynchronous and synchronous methods for all functions.
 
-### Jekyll Themes
+Here you can see a method of synchronously obtaining if a player is online:
+```kotlin
+val online = api.getSync("skyf").online()
+println("Online: $online")
+```
+And here is a asynchronous method of obtaining if a player is online:
+```kotlin
+api.get("skyf").whenComplete { player->
+    val online = player.online()
+    println("Online: $online")
+}
+```
+If you choose to use KoPixel asynchronously, you may also use error handling for all requests.
+```kotlin
+api.get("skyf").whenComplete { player->
+    val online = player.online()
+    println("Online: $online")
+}.catch { exception ->
+    println("woah! there was an error: $exception")
+}
+```
+Here you can see an example of utilizing KoPixel's asynchronous API to scan a player for Exotic Armor:
+```kotlin
+fun scan(uuid: UUID) {
+  // Grab the profiles of the player asynchronously
+  api.getSkyblockProfiles(uuid).whenComplete { profiles -> 
+    profiles.forEach { profile ->
+      profile.scan { uuid, member, inv, item ->
+        if (item.colorable() && item.exotic())
+          println("Exotic Found: \n\t${item.id()} \n\t${item.hexColor()} \n\t$uuid \n\t${inv.name}")
+      }
+    } 
+  }.catch { exception -> println("Swallowing exception.") }
+}
+scan("cab60d114bd84d5fbcc46383ee8f6ed1".toUUID())
+```
+KoPixel currently supports a large portion of the skyblock API and regular player API, although resource, auction, bazaar, and dungeon implementations are planned for the near future.
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ryanhcode/KoPixel/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
